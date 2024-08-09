@@ -4,18 +4,23 @@ var gamePattern = [];
 var userClickedPattern = [];
 var level = 0;
 var gameStart = true;
-var trys = 4;
+var falladoEnCompletarLaSerie = false;
+var randomChosenColour = "";
+var position = 0;
 
 // desactivar botones al principio del programa
 $("div").css('pointer-events','none');
 
 function nextSequence() {
+    // game chooses a color
     var randomNumber = Math.floor(Math.random()*3);
-    var randomChosenColour = buttonColours[randomNumber];
+    randomChosenColour = buttonColours[randomNumber];
+    // game adds the button to the gamePattern array
     gamePattern.push(randomChosenColour);
     level++;
     $("h1").text("Level "+ level);
-    animatePress(randomChosenColour);
+    // game animates the button press
+    $("#"+randomChosenColour).fadeOut("fast").fadeIn("slow");
     console.log(gamePattern);
 }
 
@@ -24,47 +29,45 @@ function nextSequence() {
 $(document).ready(function () {
     $("div[type]").click(function () {
         if($("div").hasClass("btn")){
+            if(position === 0){
+                userClickedPattern = [];
+            }
             var userChosenColour = this.id;
             animatePress(this.id);
-            var tempUserClickedPattern = userClickedPattern;
-            tempUserClickedPattern.push(userChosenColour);
 
-            console.log("game pattern -> " + gamePattern);
-            console.log("user pattern -> " + tempUserClickedPattern);
-            
-            var hasFallado = true;
-
-            if(trys > 0){
-                for (let i = 0; i < gamePattern.length; i++) {
-                    if (gamePattern[i] === tempUserClickedPattern[i]){
-                        hasFallado = false;
-                    }
-                    else{
-                        hasFallado = true;
-                        break;
-                    }
-                }
-
-                console.log("Hemos fallado -> " + hasFallado);
-
-                if(hasFallado){
-                    trys--;
-                }
-                else{
-                    userClickedPattern.push();
-                    nextSequence();
-                }
+            if(gamePattern[position] === userChosenColour){
+                position++;
+                userClickedPattern.push(userChosenColour);
             }
             else{
+                falladoEnCompletarLaSerie = true;
+            }
+
+            if(gamePattern.length === userClickedPattern.length){
+                falladoEnCompletarLaSerie = false;
+                position = 0;
+            }
+            
+            if(falladoEnCompletarLaSerie){
+                playSound("wrong");
+                $("body").addClass("game-over");
+                setTimeout(function(){
+                    $("body").removeClass("game-over");
+                },200);
                 $("h1").text("Game over! Push a key to start again!");
-                trys = 4;
+                gameStart = true;
                 level = 0;
                 gamePattern = [];
                 userClickedPattern = [];
+                position = 0;
+                $("div").css('pointer-events','none'); 
             }
-
+            // si has acertado
+            if (!falladoEnCompletarLaSerie && (gamePattern.length === userClickedPattern.length)){
+                nextSequence();
+            }
         }
-     });
+    });
 });
 
 // When the user clicks any key, the h1 changes to which lvl we are currently in
@@ -84,7 +87,7 @@ function animatePress(currentColour) {
     $("#"+currentColour).addClass("pressed");
     setTimeout(function(){
         $("#"+currentColour).removeClass("pressed");
-    },200);
+    },100);
 }
 
 // Sounds
@@ -120,6 +123,9 @@ function playSound(name) {
             break;
         case "blue":
             sound = new Audio("sounds/blue.mp3");
+            break;
+        case "wrong":
+            sound = new Audio("sounds/wrong.mp3");
             break;
     }
     sound.play();
